@@ -1,0 +1,67 @@
+# ==============================
+# Terraform
+# ==============================
+
+# Terraform working directory
+.terraform/
+**/.terraform/*
+
+# Terraform state files
+*.tfstate
+*.tfstate.*
+terraform.tfstate
+terraform.tfstate.backup
+
+# Terraform lock file (optional: ignore if you don't want provider pinning tracked)
+.terraform.lock.hcl
+
+# Crash logs
+crash.log
+crash.*.log
+
+# Sensitive variable files
+*.tfvars
+*.tfvars.json
+
+# Override files
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# ==============================
+# Terraform Backend Artifacts
+# ==============================
+
+# Local backend folders
+s3bucketForStatefile/
+
+# ==============================
+# Kubernetes
+# ==============================
+
+# Local kube config
+.kube/
+kubeconfig
+kubeconfig.*
+
+# ==============================
+# OS / Editor Noise
+# ==============================
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+desktop.ini
+
+# VS Code
+.vscode/
+
+# ==============================
+# Shell / Logs
+# ==============================
+
+*.log
+*.pid

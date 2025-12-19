@@ -1,0 +1,14 @@
+@"
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: webapp-admin-binding
+subjects:
+- kind: ServiceAccount
+  name: webapp-admin-sa
+  namespace: default
+roleRef:
+  kind: ClusterRole
+  name: cluster-admin
+  apiGroup: rbac.authorization.k8s.io
+"@ | Out-File -Encoding utf8 clusterrolebinding.yaml
