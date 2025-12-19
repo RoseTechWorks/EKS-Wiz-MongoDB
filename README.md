@@ -1,3 +1,8 @@
+# EKS Wiz MongoDB Deployment
+
+This repository contains Terraform, Kubernetes, and Helm configurations
+used to deploy MongoDB on an EKS cluster following Wiz best practices.
+
 # DevSecOps Insecure EKS MongoDB Lab (Wiz Scan Project)
 
 ## Project Overview
@@ -333,3 +338,6 @@ This environment is now **ready for Wiz scanning**, and Wiz should report multip
 
 ---
 
+=======
+# EKS-Wiz-MongoDB
+>>>>>>> 0906ab5ad36c1ba4e82cd80991e653414a48ca45
