@@ -8,7 +8,7 @@ provider "aws" {
 data "aws_vpc" "eks_vpc" {
   filter {
     name   = "tag:Name"
-    values = ["my-cluster-vpc"]
+    values = ["MongoDB-cluster-vpc"]
   }
 }
 
