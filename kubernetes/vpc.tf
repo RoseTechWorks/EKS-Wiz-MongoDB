@@ -9,7 +9,7 @@ variable "public_subnet_cidr_blocks" {}
 data "aws_availability_zones" "available" {}
 
 
-module "my-cluster-vpc" {
+module "MongoDB-cluster-vpc" {
   source  = "terraform-aws-modules/vpc/aws"
   version = "5.0.0"
 
