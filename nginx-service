@@ -1,5 +1,0 @@
-kubectl expose deployment nginx \
-  --name=nginx-service \
-  --type=LoadBalancer \
-  --port=80 \
-  --target-port=80
