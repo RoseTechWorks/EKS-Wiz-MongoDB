@@ -1,159 +1,343 @@
-EKS Wiz MongoDB
+# EKS Wiz MongoDB Deployment
 
-Intentionally Insecure Kubernetes and MongoDB Environment for Security Scanning
+This repository contains Terraform, Kubernetes, and Helm configurations
+used to deploy MongoDB on an EKS cluster following Wiz best practices.
 
-Overview
-This project deploys a simple web application to Amazon EKS and intentionally introduces high risk security misconfigurations across Kubernetes MongoDB and AWS IAM.
+# DevSecOps Insecure EKS MongoDB Lab (Wiz Scan Project)
 
-The environment is designed for security scanning and detection specifically to demonstrate the types of issues tools like Wiz should identify.
+## Project Overview
 
-This project is intentionally insecure. Do not use in production.
+This project demonstrates how to intentionally build an **insecure cloud environment** so that a security scanning tool (Wiz) can identify risks.
 
-Architecture Summary
-Amazon EKS cluster running a public web application MongoDB hosted on an EC2 instance Kubernetes LoadBalancer exposes the app publicly Kubernetes RBAC is dangerously over permissive MongoDB credentials are stored in plaintext EC2 IAM permissions are excessive
+The environment includes:
 
-Phase 1 Deploy Web Application to EKS
-Step 1 Configure EKS Cluster Access Local Machine
-On your local laptop not SSH connect kubectl to EKS
+* An **Amazon EKS cluster** running a public web application
+* A **MongoDB database on an EC2 instance**
+* **Over-privileged IAM permissions**
+* **Hardcoded secrets** exposed inside containers
 
-aws --version
-aws eks update kubeconfig region us east 2 name MongoDB cluster
-Step 2 Verify EKS Access
+This setup is **intentionally insecure** for learning and scanning purposes.
+
+---
+
+## Architecture Summary
+
+* EKS cluster and MongoDB EC2 run in the **same VPC**
+* Web application is publicly accessible through a **LoadBalancer**
+* MongoDB runs on an EC2 instance with **weak security**
+* Secrets are stored in **plaintext ConfigMaps**
+* RBAC grants **cluster-admin** access to the application
+
+---
+
+# Phase 1 – Deploy the Web Application to EKS
+
+### Step 1: Configure cluster access (local machine)
+
+On your **local laptop** (not SSH), connect kubectl to EKS:
+
+```bash
+aws eks update-kubeconfig --region us-east-2 --name my-cluster
+```
+
+If AWS CLI is missing, install it first:
+[https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)
+
+---
+
+### Step 2: Verify EKS access
+
+```bash
 kubectl get nodes
-If nodes appear you are connected successfully.
+```
 
-Step 3 Create Application Manifests
-Create the following files locally
+If nodes appear, you are connected successfully.
 
-deployment.yaml service.yaml
+---
 
-These files pull the container image run the web application and expose it publicly using a LoadBalancer.
+### Step 3: Create application manifests
 
-Step 4 Deploy to EKS
-kubectl apply f deployment.yaml
-kubectl apply f service.yaml
-Expected output Deployment created Service created
+Create the following files locally:
 
-Step 5 Confirm Everything Is Running
+* `deployment.yaml`
+* `service.yaml`
+
+These files:
+
+* Pull the container image
+* Run the web app
+* Expose it publicly using a LoadBalancer
+
+---
+
+### Step 4: Verify YAML files have content
+
+```bash
+type deployment.yaml
+type service.yaml
+```
+
+You **must see YAML output**.
+If the files are empty, stop and fix them.
+
+---
+
+### Step 5: Deploy to EKS
+
+```bash
+kubectl apply -f deployment.yaml
+kubectl apply -f service.yaml
+```
+
+Expected output:
+
+* Deployment created
+* Service created
+
+---
+
+### Step 6: Confirm everything is running
+
+```bash
 kubectl get pods
 kubectl get svc
-Check for Pod status Running Service type LoadBalancer External IP assigned may take one to three minutes
+```
 
-At this point the application is publicly accessible from the internet.
+Check for:
 
-Phase 2 Identity and Secrets Intentionally Insecure
-This phase introduces deliberate security risks that Wiz is expected to detect.
+* Pod status: **Running**
+* Service type: **LoadBalancer**
+* External IP assigned (may take 1–3 minutes)
 
-Step 1 Give the Web App Full Kubernetes Admin Access
-What this does You are giving the application full control of the cluster which is extremely unsafe.
+---
 
-Why this exists Wiz should flag over privileged Kubernetes ServiceAccount and dangerous RBAC configuration.
+# Phase 2 – Identity and Secrets (Intentionally Insecure)
 
-Files to create serviceaccount.yaml clusterrolebinding.yaml
+This phase introduces **security risks** that Wiz is expected to detect.
+
+---
+
+## Step 1 – Give the web app full Kubernetes admin access
+
+### What this does
+
+You are giving the application **full control of the cluster**, which is extremely unsafe.
+
+### Why this exists
+
+Wiz should flag:
+
+* Over-privileged Kubernetes ServiceAccount
+* Dangerous RBAC configuration
+
+---
+
+### Files created
+
+* `serviceaccount.yaml`
+* `clusterrolebinding.yaml`
 
 These bind the ServiceAccount to cluster admin.
 
-Apply RBAC Configuration
-kubectl apply f serviceaccount.yaml
-kubectl apply f clusterrolebinding.yaml
-Verify
-kubectl get serviceaccount webapp admin sa
-kubectl get clusterrolebinding webapp admin binding
-kubectl describe pod pod name
-You should see Service Account webapp admin sa
+---
 
-Step 2 Over Privilege the MongoDB EC2 Instance
-What this does The MongoDB EC2 server is given excessive AWS permissions.
+### Apply RBAC configuration
 
-Why this exists Wiz should flag over privileged IAM role and dangerous EC2 permissions.
+```bash
+kubectl apply -f serviceaccount.yaml
+kubectl apply -f clusterrolebinding.yaml
+```
 
-Step 3 MongoDB Admin User Weak Credentials
-This is intentionally weak and insecure.
+---
 
-SSH into the MongoDB EC2 instance.
+### Verify
 
-Enter MongoDB shell
+```bash
+kubectl get serviceaccount webapp-admin-sa
+kubectl get clusterrolebinding webapp-admin-binding
+kubectl describe pod <pod-name>
+```
 
+You should see:
+
+```
+Service Account: webapp-admin-sa
+```
+
+---
+
+## Step 2 – Over-privilege the MongoDB EC2 instance
+
+### What this does
+
+The MongoDB EC2 server is given **excessive AWS permissions**.
+
+### Why this exists
+
+Wiz should flag:
+
+* Over-privileged IAM role
+* Dangerous EC2 permissions
+
+---
+
+### MongoDB admin user (weak credentials)
+
+On the MongoDB EC2 instance:
+
+```bash
 mongosh
-You should see test greater than
-
-Switch to admin database
-
 use admin
-Create admin user
+```
 
+Create an admin user:
+
+```javascript
 db.createUser({
   user "adminuser",
   pwd "password123",
   roles [ { role "root", db "admin" } ]
 })
-Expected output { ok 1 }
+```
 
-Verify
+Expected output:
 
-show users
-You must see
+```
+{ ok: 1 }
+```
 
-{
-  user "adminuser",
-  roles [ { role "root", db "admin" } ]
-}
-Exit MongoDB
+Exit MongoDB:
 
+```bash
 exit
-Step 4 Enable MongoDB Authentication and Network Exposure
-Edit MongoDB config
+```
 
-sudo nano etc mongod.conf
-Change bindIp 127.0.0.1
+This is **intentionally weak** and insecure.
 
-To bindIp 0.0.0.0
+---
 
-Add at the top
+## Step 3 – Store MongoDB credentials insecurely
 
-security
-  authorization enabled
-Save and exit CTRL O ENTER CTRL X
+### Enable MongoDB authentication
 
-Restart MongoDB
+Edit MongoDB config:
 
+```bash
+sudo nano /etc/mongod.conf
+```
+
+Confirm or add:
+
+```yaml
+security:
+  authorization: enabled
+```
+
+Restart MongoDB:
+
+```bash
 sudo systemctl restart mongod
-Verify MongoDB is listening publicly
+```
 
-sudo ss tulnp | grep 27017
-You should see 0.0.0.0 colon 27017
+Test login:
 
-Test login
+```bash
+mongosh -u adminuser -p password123 --authenticationDatabase admin
+```
 
-mongosh u adminuser p password123 authenticationDatabase admin
-Step 5 Store MongoDB Credentials Insecurely
-Step 5.1 Get MongoDB Private IP
-On the MongoDB EC2 instance
+---
 
-hostname I
-Example 10.0.4.232
+### Step 3.1 – Get MongoDB private IP
 
-Step 5.2 Create Plaintext Credentials File Local Machine
+On the MongoDB EC2 instance:
+
+```bash
+hostname -I
+```
+
+Example:
+
+```
+10.0.4.232
+```
+
+Save this IP.
+
+---
+
+### Step 3.2 – Create plaintext credentials file (local machine)
+
+```powershell
 @"
 MONGO_URI=mongodb://adminuser:password123@10.0.4.232:27017/admin
-"@ | Out File Encoding utf8 mongodb creds.txt
-This is intentionally insecure.
+"@ | Out-File -Encoding utf8 mongodb-creds.txt
+```
 
-Verify file contents
+This is **intentionally insecure**.
 
-Get Content mongodb creds.txt
-Step 5.3 Create ConfigMap from Credentials
-kubectl create configmap mongodb creds from file mongodb creds.txt
-Verify
+Verify file contents:
 
-kubectl get configmap mongodb creds
-Step 5.4 Restart Application to Load Secrets
-kubectl rollout restart deployment web app
-Wait and confirm
+```powershell
+type mongodb-creds.txt
+```
 
+---
+
+### Step 3.3 – Create ConfigMap from credentials
+
+```bash
+kubectl create configmap mongodb-creds --from-file=mongodb-creds.txt
+```
+
+Verify:
+
+```bash
+kubectl get configmap mongodb-creds
+```
+
+---
+
+### Step 3.4 – Restart application to load secrets
+
+```bash
+kubectl rollout restart deployment web-app
+```
+
+Wait and confirm:
+
+```bash
 kubectl get pods
-Step 5.5 Prove Credentials Are Inside the Container
-kubectl exec it pod name cat etc secrets mongodb creds.txt
-Expected output
+```
 
+---
+
+### Step 3.5 – Prove credentials are inside the container
+
+```bash
+kubectl exec -it <pod-name> -- cat /etc/secrets/mongodb-creds.txt
+```
+
+Expected output:
+
+```
 MONGO_URI=mongodb://adminuser:password123@10.0.4.232:27017/admin
+```
+
+---
+
+## Project Outcome
+
+At this point:
+
+* The application is public
+* Kubernetes RBAC is dangerously open
+* MongoDB credentials are exposed
+* IAM permissions are excessive
+
+This environment is now **ready for Wiz scanning**, and Wiz should report multiple high-risk findings.
+
+---
+
+=======
+# EKS-Wiz-MongoDB
+>>>>>>> 0906ab5ad36c1ba4e82cd80991e653414a48ca45
